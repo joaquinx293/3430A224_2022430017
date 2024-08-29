@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
-#include <vector>
+#include <fstream>
+#include <sstream>
 #include <iomanip> // Para std::fixed y std::setprecision
 
 struct Paciente {
@@ -54,6 +55,67 @@ public:
         }
     }
 
+    void eliminar(const std::string& nombre) {
+        Nodo* temp = cabeza;
+        while (temp != nullptr) {
+            if (temp->paciente.nombre == nombre) {
+                if (temp->anterior != nullptr) {
+                    temp->anterior->siguiente = temp->siguiente;
+                } else {
+                    cabeza = temp->siguiente;
+                }
+                if (temp->siguiente != nullptr) {
+                    temp->siguiente->anterior = temp->anterior;
+                } else {
+                    cola = temp->anterior;
+                }
+                delete temp;
+                return;
+            }
+            temp = temp->siguiente;
+        }
+        std::cout << "Paciente con nombre " << nombre << " no encontrado." << std::endl;
+    }
+
+    void actualizar(const std::string& nombre, const Paciente& nuevo_paciente) {
+        Nodo* temp = cabeza;
+        while (temp != nullptr) {
+            if (temp->paciente.nombre == nombre) {
+                temp->paciente = nuevo_paciente;
+                return;
+            }
+            temp = temp->siguiente;
+        }
+        std::cout << "Paciente con nombre " << nombre << " no encontrado." << std::endl;
+    }
+
+    void cargarDesdeArchivo(const std::string& nombre_archivo) {
+        std::ifstream archivo(nombre_archivo);
+        if (!archivo.is_open()) {
+            std::cerr << "Error al abrir el archivo: " << nombre_archivo << std::endl;
+            return;
+        }
+
+        std::string linea;
+        while (std::getline(archivo, linea)) {
+            std::stringstream ss(linea);
+            std::string nombre;
+            int edad;
+            int peso;
+            float altura;
+            std::getline(ss, nombre, ',');
+            ss >> edad;
+            ss.ignore(); 
+            ss >> peso;
+            ss.ignore(); 
+            ss >> altura;
+
+            Paciente paciente = {nombre, edad, peso, altura};
+            agregar(paciente);
+        }
+        archivo.close();
+    }
+
     void calcularPromediosYIMC() const {
         Nodo* temp = cabeza;
         int totalEdad = 0;
@@ -98,29 +160,95 @@ private:
     }
 };
 
+void mostrarMenu() {
+    std::cout << "Menu de opciones:" << std::endl;
+    std::cout << "1. Agregar paciente" << std::endl;
+    std::cout << "2. Eliminar paciente" << std::endl;
+    std::cout << "3. Imprimir lista desde el inicio" << std::endl;
+    std::cout << "4. Imprimir lista desde el final" << std::endl;
+    std::cout << "5. Actualizar paciente" << std::endl;
+    std::cout << "6. Cargar pacientes desde archivo" << std::endl;
+    std::cout << "7. Calcular promedios e IMC" << std::endl;
+    std::cout << "0. Salir" << std::endl;
+    std::cout << "Para que se muestre algo primero tiene que ingresar personas en la lista" << std::endl;
+}
+
 int main() {
     ListaDobleEnlazada lista;
+    int opcion;
 
-    // Crear pacientes
-    Paciente paciente1 = {"Logan", 30, 70, 1.75};
-    Paciente paciente2 = {"Cassandra", 50, 60, 1.71};
-    Paciente paciente3 = {"Wead", 100, 74, 1.78};
+    do {
+        mostrarMenu();
+        std::cout << "Seleccione una opción: ";
+        std::cin >> opcion;
+        std::cin.ignore(); 
 
-    // Agregar pacientes a la lista
-    lista.agregar(paciente1);
-    lista.agregar(paciente2);
-    lista.agregar(paciente3);
-
-    // Imprimir lista desde el inicio y el final
-    std::cout << "Elementos de la lista doblemente enlazada desde el inicio:" << std::endl;
-    lista.imprimirDesdeInicio();
-
-    std::cout << "Elementos de la lista doblemente enlazada desde el final:" << std::endl;
-    lista.imprimirDesdeFinal();
-
-    // Calcular promedios y IMC
-    std::cout << "Cálculo de promedios e IMC:" << std::endl;
-    lista.calcularPromediosYIMC();
+        switch (opcion) {
+            case 1: {
+                Paciente paciente;
+                std::cout << "Nombre: ";
+                std::getline(std::cin, paciente.nombre);
+                std::cout << "Edad: ";
+                std::cin >> paciente.edad;
+                std::cout << "Peso: ";
+                std::cin >> paciente.peso;
+                std::cout << "Altura: ";
+                std::cin >> paciente.altura;
+                std::cin.ignore(); 
+                lista.agregar(paciente);
+                break;
+            }
+            case 2: {
+                std::string nombre;
+                std::cout << "Nombre del paciente a eliminar: ";
+                std::getline(std::cin, nombre);
+                lista.eliminar(nombre);
+                break;
+            }
+            case 3: {
+                lista.imprimirDesdeInicio();
+                break;
+            }
+            case 4: {
+                lista.imprimirDesdeFinal();
+                break;
+            }
+            case 5: {
+                std::string nombre;
+                Paciente nuevo_paciente;
+                std::cout << "Nombre del paciente a actualizar: ";
+                std::getline(std::cin, nombre);
+                std::cout << "Nuevo nombre: ";
+                std::getline(std::cin, nuevo_paciente.nombre);
+                std::cout << "Nueva edad: ";
+                std::cin >> nuevo_paciente.edad;
+                std::cout << "Nuevo peso: ";
+                std::cin >> nuevo_paciente.peso;
+                std::cout << "Nueva altura: ";
+                std::cin >> nuevo_paciente.altura;
+                std::cin.ignore(); // Ignorar el salto de línea restante
+                lista.actualizar(nombre, nuevo_paciente);
+                break;
+            }
+            case 6: {
+                std::string archivo;
+                std::cout << "Nombre del archivo CSV: ";
+                std::getline(std::cin, archivo);
+                lista.cargarDesdeArchivo(archivo);
+                break;
+            }
+            case 7: {
+                lista.calcularPromediosYIMC();
+                break;
+            }
+            case 0:
+                std::cout << "Saliendo del programa." << std::endl;
+                break;
+            default:
+                std::cout << "Opción inválida. Por favor, intente de nuevo." << std::endl;
+                break;
+        }
+    } while (opcion != 0);
 
     return 0;
 }

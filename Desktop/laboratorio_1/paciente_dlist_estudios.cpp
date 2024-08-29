@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <iomanip> // Para std::fixed y std::setprecision
+#include <iomanip> 
 
 struct Paciente {
     std::string nombre;
