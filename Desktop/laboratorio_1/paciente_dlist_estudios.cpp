@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <vector>
+#include <iomanip> // Para std::fixed y std::setprecision
 
 struct Paciente {
     std::string nombre;
@@ -52,26 +54,30 @@ public:
         }
     }
 
-    void eliminar(const std::string& nombre) {
+    void calcularPromediosYIMC() const {
         Nodo* temp = cabeza;
+        int totalEdad = 0;
+        int totalPeso = 0;
+        int count = 0;
+
         while (temp != nullptr) {
-            if (temp->paciente.nombre == nombre) {
-                if (temp->anterior != nullptr) {
-                    temp->anterior->siguiente = temp->siguiente;
-                } else {
-                    cabeza = temp->siguiente;
-                }
-                if (temp->siguiente != nullptr) {
-                    temp->siguiente->anterior = temp->anterior;
-                } else {
-                    cola = temp->anterior;
-                }
-                delete temp;
-                return;
-            }
+            const Paciente& p = temp->paciente;
+            totalEdad += p.edad;
+            totalPeso += p.peso;
+            count++;
+
+            float imc = calcularIMC(p.peso, p.altura);
+            std::cout << "Nombre: " << p.nombre << ", IMC: " << std::fixed << std::setprecision(2) << imc << std::endl;
+
             temp = temp->siguiente;
         }
-        std::cout << "Paciente con nombre " << nombre << " no encontrado." << std::endl;
+
+        if (count > 0) {
+            std::cout << "Promedio de Edad: " << static_cast<float>(totalEdad) / count << std::endl;
+            std::cout << "Promedio de Peso: " << static_cast<float>(totalPeso) / count << std::endl;
+        } else {
+            std::cout << "No hay pacientes para calcular promedios." << std::endl;
+        }
     }
 
     ~ListaDobleEnlazada() {
@@ -86,32 +92,35 @@ public:
 private:
     Nodo* cabeza;
     Nodo* cola;
+
+    float calcularIMC(int peso, float altura) const {
+        return altura > 0 ? static_cast<float>(peso) / (altura * altura) : 0.0f;
+    }
 };
 
 int main() {
     ListaDobleEnlazada lista;
 
+    // Crear pacientes
     Paciente paciente1 = {"Logan", 30, 70, 1.75};
     Paciente paciente2 = {"Cassandra", 50, 60, 1.71};
     Paciente paciente3 = {"Wead", 100, 74, 1.78};
 
+    // Agregar pacientes a la lista
     lista.agregar(paciente1);
     lista.agregar(paciente2);
     lista.agregar(paciente3);
 
+    // Imprimir lista desde el inicio y el final
     std::cout << "Elementos de la lista doblemente enlazada desde el inicio:" << std::endl;
     lista.imprimirDesdeInicio();
 
     std::cout << "Elementos de la lista doblemente enlazada desde el final:" << std::endl;
     lista.imprimirDesdeFinal();
 
-    // Eliminar un paciente
-    std::cout << "Eliminando paciente con nombre 'Cassandra':" << std::endl;
-    lista.eliminar("Cassandra");
-
-    // Imprimir lista después de la eliminación
-    std::cout << "Elementos de la lista doblemente enlazada después de la eliminación:" << std::endl;
-    lista.imprimirDesdeInicio();
+    // Calcular promedios y IMC
+    std::cout << "Cálculo de promedios e IMC:" << std::endl;
+    lista.calcularPromediosYIMC();
 
     return 0;
 }
