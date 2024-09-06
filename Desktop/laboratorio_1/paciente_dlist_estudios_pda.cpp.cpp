@@ -2,7 +2,9 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <iomanip> // Para std::fixed y std::setprecision
+#include <iomanip>
+#include <vector>
+#include <algorithm> // Para std::sort
 
 struct Paciente {
     std::string nombre;
@@ -23,8 +25,15 @@ struct Nodo {
 
 class ListaDobleEnlazada {
 public:
-    ListaDobleEnlazada() : cabeza(nullptr), cola(nullptr) {}
+    Nodo* getCabeza() const {
+        return cabeza;
+    }
 
+    float calcularIMC(int peso, float altura) const {
+        return altura > 0 ? static_cast<float>(peso) / (altura * altura) : 0.0f;
+    }
+
+    ListaDobleEnlazada() : cabeza(nullptr), cola(nullptr) {}
 
     void agregar(const Paciente& paciente) {
         Nodo* nuevo_nodo = new Nodo(paciente);
@@ -37,105 +46,101 @@ public:
             cola = nuevo_nodo;
         }
     }
+
     class ColaDePrioridad {
     private:
-    Nodo* cabeza;
-    Nodo* cola;
+        Nodo* cabeza;
+        Nodo* cola;
 
-    // Función para comparar la prioridad entre pacientes
-    bool esMayorPrioridad(const Paciente& p1, const Paciente& p2) {
-        if (p1.imc == p2.imc) {
-            return p1.AC1 > p2.AC1; // Si el IMC es igual, compara el A1C
-        }
-        return p1.imc > p2.imc; // Comparar por IMC
-    }
-
-public:
-    ColaDePrioridad() : cabeza(nullptr), cola(nullptr) {}
-
-    void encolarPaciente(const Paciente& paciente) {
-        Nodo* nuevo_nodo = new Nodo(paciente);
-
-        // Si la cola está vacía
-        if (cabeza == nullptr) {
-            cabeza = cola = nuevo_nodo;
-            return;
+        bool esMayorPrioridad(const Paciente& p1, const Paciente& p2) {
+            if (p1.imc == p2.imc) {
+                return p1.AC1 > p2.AC1; // Si el IMC es igual, compara el A1C
+            }
+            return p1.imc > p2.imc; // Comparar por IMC
         }
 
-        // Insertar en la posición correcta según la prioridad
-        Nodo* temp = cabeza;
-        while (temp != nullptr && esMayorPrioridad(temp->paciente, paciente)) {
-            temp = temp->siguiente;
-        }
+    public:
+        ColaDePrioridad() : cabeza(nullptr), cola(nullptr) {}
 
-        if (temp == nullptr) {
-            // Insertar al final
-            cola->siguiente = nuevo_nodo;
-            nuevo_nodo->anterior = cola;
-            cola = nuevo_nodo;
-        } else if (temp == cabeza) {
-            // Insertar al inicio
-            nuevo_nodo->siguiente = cabeza;
-            cabeza->anterior = nuevo_nodo;
-            cabeza = nuevo_nodo;
-        } else {
-            // Insertar en el medio
-            Nodo* anterior = temp->anterior;
-            anterior->siguiente = nuevo_nodo;
-            nuevo_nodo->anterior = anterior;
-            nuevo_nodo->siguiente = temp;
-            temp->anterior = nuevo_nodo;
-        }
-    }
+        void encolarPaciente(const Paciente& paciente) {
+            Nodo* nuevo_nodo = new Nodo(paciente);
 
-    Paciente desencolarPaciente() {
-        if (cabeza == nullptr) {
-            throw std::runtime_error("La cola está vacía.");
-        }
+            if (cabeza == nullptr) {
+                cabeza = cola = nuevo_nodo;
+                return;
+            }
 
-        Nodo* temp = cabeza;
-        Paciente paciente = temp->paciente;
-
-        cabeza = cabeza->siguiente;
-        if (cabeza != nullptr) {
-            cabeza->anterior = nullptr;
-        } else {
-            cola = nullptr; // La lista quedó vacía
-        }
-
-        delete temp;
-        return paciente;
-    }
-
-    bool estaVacia() const {
-        return cabeza == nullptr;
-    }
-
-    size_t tamano() const {
-        size_t tam = 0;
-        Nodo* temp = cabeza;
-        while (temp != nullptr) {
-            tam++;
-            temp = temp->siguiente;
-        }
-        return tam;
-    }
-
-    ~ColaDePrioridad() {
-        while (cabeza != nullptr) {
             Nodo* temp = cabeza;
-            cabeza = cabeza->siguiente;
-            delete temp;
+            while (temp != nullptr && esMayorPrioridad(temp->paciente, paciente)) {
+                temp = temp->siguiente;
+            }
+
+            if (temp == nullptr) {
+                cola->siguiente = nuevo_nodo;
+                nuevo_nodo->anterior = cola;
+                cola = nuevo_nodo;
+            } else if (temp == cabeza) {
+                nuevo_nodo->siguiente = cabeza;
+                cabeza->anterior = nuevo_nodo;
+                cabeza = nuevo_nodo;
+            } else {
+                Nodo* anterior = temp->anterior;
+                anterior->siguiente = nuevo_nodo;
+                nuevo_nodo->anterior = anterior;
+                nuevo_nodo->siguiente = temp;
+                temp->anterior = nuevo_nodo;
+            }
         }
-    }
-};
+
+        Paciente desencolarPaciente() {
+            if (cabeza == nullptr) {
+                throw std::runtime_error("La cola está vacía.");
+            }
+
+            Nodo* temp = cabeza;
+            Paciente paciente = temp->paciente;
+
+            cabeza = cabeza->siguiente;
+            if (cabeza != nullptr) {
+                cabeza->anterior = nullptr;
+            } else {
+                cola = nullptr;
+            }
+
+            delete temp;
+            return paciente;
+        }
+
+        bool estaVacia() const {
+            return cabeza == nullptr;
+        }
+
+        size_t tamano() const {
+            size_t tam = 0;
+            Nodo* temp = cabeza;
+            while (temp != nullptr) {
+                tam++;
+                temp = temp->siguiente;
+            }
+            return tam;
+        }
+
+        ~ColaDePrioridad() {
+            while (cabeza != nullptr) {
+                Nodo* temp = cabeza;
+                cabeza = cabeza->siguiente;
+                delete temp;
+            }
+        }
+    };
 
     void imprimirDesdeInicio() const {
         Nodo* temp = cabeza;
         while (temp != nullptr) {
             const Paciente& p = temp->paciente;
             std::cout << "Nombre: " << p.nombre << ", Edad: " << p.edad
-                      << ", Peso: " << p.peso << ", Altura: " << p.altura <<",AC1="<< p.AC1 << std::endl;
+                      << ", Peso: " << p.peso << ", Altura: " << p.altura 
+                      << ", AC1=" << p.AC1 << ", IMC=" << p.imc << std::endl;
             temp = temp->siguiente;
         }
     }
@@ -145,10 +150,12 @@ public:
         while (temp != nullptr) {
             const Paciente& p = temp->paciente;
             std::cout << "Nombre: " << p.nombre << ", Edad: " << p.edad
-                      << ", Peso: " << p.peso << ", Altura: " << p.altura << ",AC1=" <<p.AC1 << std::endl;
+                      << ", Peso: " << p.peso << ", Altura: " << p.altura 
+                      << ", AC1=" << p.AC1 << ", IMC=" << p.imc << std::endl;
             temp = temp->anterior;
         }
     }
+
     void eliminar(const std::string& nombre) {
         Nodo* temp = cabeza;
         while (temp != nullptr) {
@@ -206,10 +213,9 @@ public:
             ss >> peso;
             ss.ignore(); 
             ss >> AC1;
+            float imc = calcularIMC(peso, altura);
 
-
-
-            Paciente paciente = {nombre, edad,altura, peso,AC1};
+            Paciente paciente = {nombre, edad,altura, peso,AC1,imc};
             agregar(paciente);
         }
         archivo.close();
@@ -241,24 +247,43 @@ public:
         }
     }
 
-    ~ListaDobleEnlazada() {
-        Nodo* temp;
-        while (cabeza != nullptr) {
-            temp = cabeza;
-            cabeza = cabeza->siguiente;
-            delete temp;
-        }
+    void generarListaPrioridadPorPercentil(ColaDePrioridad& cola_prioridad) {
+    Nodo* temp = cabeza; // Obtener la cabeza de la lista de pacientes
+    std::vector<float> imc_values;
+    std::vector<float> ac1_values;
+
+    // Recopilar valores para percentil
+    while (temp != nullptr) {
+        imc_values.push_back(temp->paciente.imc);
+        ac1_values.push_back(temp->paciente.AC1);
+        temp = temp->siguiente;
     }
 
+    // Calcular percentiles
+    float percentil90_IMC = calcularPercentil(imc_values, 90);
+    float percentil90_AC1 = calcularPercentil(ac1_values, 90);
+
+    // Recorrer la lista de pacientes de nuevo para encolar los de alto riesgo
+    temp = cabeza;
+    while (temp != nullptr) {
+        if (temp->paciente.imc >= percentil90_IMC && temp->paciente.AC1 >= percentil90_AC1) {
+            cola_prioridad.encolarPaciente(temp->paciente);
+        }
+        temp = temp->siguiente;
+    }
+
+    std::cout << "Lista de prioridad generada con pacientes en el percentil 90 de IMC y AC1." << std::endl;
+}
 private:
     Nodo* cabeza;
     Nodo* cola;
 
-    float calcularIMC(int peso, float altura) const {
-        return altura > 0 ? static_cast<float>(peso) / (altura * altura) : 0.0f;
+    float calcularPercentil(std::vector<float>& datos, float percentil) const {
+        std::sort(datos.begin(), datos.end());
+        size_t idx = static_cast<size_t>(percentil / 100.0 * (datos.size() - 1));
+        return datos[idx];
     }
 };
-
 void mostrarMenu() {
     std::cout << "Menu de opciones:" << std::endl;
     std::cout << "Para crear la lista de riego se tomara en cuenta los factores de riesgo de el IMC y la Azucar en sangre" << std::endl;
@@ -275,11 +300,10 @@ void mostrarMenu() {
     std::cout << "0. Salir" << std::endl;
     std::cout << "Para que se muestre algo primero tiene que ingresar personas en la lista" << std::endl;
 }
-
 int main() {
     ListaDobleEnlazada lista;
+    ListaDobleEnlazada::ColaDePrioridad cola; // Crear la cola de prioridad
     int opcion;
-
 
     do {
         mostrarMenu();
@@ -298,7 +322,7 @@ int main() {
                 std::cin >> paciente.peso;
                 std::cout << "Altura: ";
                 std::cin >> paciente.altura;
-                std::cin.ignore(); 
+                paciente.imc = lista.calcularIMC(paciente.peso, paciente.altura);
                 lista.agregar(paciente);
                 break;
             }
@@ -330,6 +354,7 @@ int main() {
                 std::cin >> nuevo_paciente.peso;
                 std::cout << "Nueva altura: ";
                 std::cin >> nuevo_paciente.altura;
+                nuevo_paciente.imc = lista.calcularIMC(nuevo_paciente.peso, nuevo_paciente.altura);
                 std::cin.ignore(); // Ignorar el salto de línea restante
                 lista.actualizar(nombre, nuevo_paciente);
                 break;
@@ -346,17 +371,30 @@ int main() {
                 break;
             }
             case 8:{
-                  std::cout << "Saliendo del programa." << std::endl;
-
-
+                while (!cola.estaVacia()) {
+                    cola.desencolarPaciente();
+                    }
+                lista.generarListaPrioridadPorPercentil(cola);
+                std::cout << "Lista de prioridad generada usando percentiles." << std::endl;
+                break;
             }
             case 9: {
-                std::cout << "Saliendo del programa." << std::endl;
-
+                if (cola.estaVacia()) {
+                    std::cout << "No hay pacientes en la lista de prioridad." << std::endl;
+                } else {
+                    while (!cola.estaVacia()) {
+                        Paciente p = cola.desencolarPaciente();
+                        std::cout << "Paciente: " << p.nombre << ", IMC: " << p.imc << ", A1C: " << p.AC1 << std::endl;
+                    }
+                }
+                break;
             }
             case 10: {
-                std::cout << "Saliendo del programa." << std::endl;
-
+                while (!cola.estaVacia()) {
+                    cola.desencolarPaciente();
+                }
+                std::cout << "Lista de prioridad limpiada." << std::endl;
+                break;
             }
             case 0:
                 std::cout << "Saliendo del programa." << std::endl;
