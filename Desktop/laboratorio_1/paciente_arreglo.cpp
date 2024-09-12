@@ -17,7 +17,7 @@ int main() {
     // Crear un arreglo de pacientes
     Paciente pacientes[3] = {paciente1, paciente2, paciente3};
 
-    // Recorrer el arreglo de pacientes e imprimir los datos
+    // Recorrer el arreglo de pacientes ademas de  imprimir los datos
     for (int i = 0; i < 3; ++i) {
         std::cout << "Datos del paciente " << i + 1 << ":" << std::endl;
         std::cout << "Nombre: " << pacientes[i].nombre << std::endl;
